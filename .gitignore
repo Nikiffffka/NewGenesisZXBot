@@ -34,5 +34,10 @@ Thumbs.db
 # Optional eslint cache
 .eslintcache
 
-# yt-dlp cache
+# yt-dlp cache and temp files
 __pycache__/
+*.part
+--Frag*
+*.ytdl
+*.temp
+debug_page.html

@@ -303,10 +303,10 @@ class MusicPlayer {
     async loadPlaylistWithYtDlp(url, maxTracks = 50) {
         return new Promise((resolve, reject) => {
             const args = [
-                '--flat-playlist',
                 '--dump-json',
                 '-i',
                 '--no-warnings',
+                '--no-download',
                 `--playlist-end=${maxTracks}`,
                 url
             ];
@@ -324,14 +324,15 @@ class MusicPlayer {
                     if (line.trim()) {
                         try {
                             const info = JSON.parse(line);
-                            if (info.url || info.id) {
+                            if (info.webpage_url || info.url || info.id) {
                                 tracks.push({
-                                    title: info.title || 'Unknown',
-                                    url: info.url || `https://www.youtube.com/watch?v=${info.id}`,
+                                    title: info.title || info.track || 'Unknown',
+                                    url: info.webpage_url || info.url || `https://www.youtube.com/watch?v=${info.id}`,
                                     duration: info.duration || 0,
                                     thumbnail: info.thumbnail || info.thumbnails?.[0]?.url || null,
-                                    author: info.uploader || info.channel || 'Unknown',
+                                    author: info.uploader || info.artist || info.channel || 'Unknown',
                                 });
+                                console.log(`Добавлен трек: ${info.title || info.track}`);
                             }
                         } catch (e) {
                             // Игнорируем ошибки парсинга
@@ -349,17 +350,18 @@ class MusicPlayer {
                 if (buffer.trim()) {
                     try {
                         const info = JSON.parse(buffer);
-                        if (info.url || info.id) {
+                        if (info.webpage_url || info.url || info.id) {
                             tracks.push({
-                                title: info.title || 'Unknown',
-                                url: info.url || `https://www.youtube.com/watch?v=${info.id}`,
+                                title: info.title || info.track || 'Unknown',
+                                url: info.webpage_url || info.url || `https://www.youtube.com/watch?v=${info.id}`,
                                 duration: info.duration || 0,
                                 thumbnail: info.thumbnail || null,
-                                author: info.uploader || info.channel || 'Unknown',
+                                author: info.uploader || info.artist || info.channel || 'Unknown',
                             });
                         }
                     } catch (e) {}
                 }
+                console.log(`Загружено ${tracks.length} треков из плейлиста`);
                 resolve(tracks);
             });
 
@@ -480,28 +482,56 @@ class MusicPlayer {
             } else if (query.includes('soundcloud.com')) {
                 // SoundCloud URL - используем yt-dlp
                 try {
-                    console.log('Загрузка SoundCloud трека через yt-dlp...');
-                    trackInfo = await this.getTrackInfoWithYtDlp(query);
+                    // Проверяем, плейлист это или нет
+                    const isSoundCloudPlaylist = query.includes('/sets/');
+                    
+                    if (isSoundCloudPlaylist) {
+                        console.log('Загрузка SoundCloud плейлиста через yt-dlp...');
+                        const playlistTracks = await this.loadPlaylistWithYtDlp(query, 30);
+                        
+                        if (playlistTracks && playlistTracks.length > 0) {
+                            for (const track of playlistTracks) {
+                                this.queue.push(track);
+                            }
+                            this.notifyListeners();
+                            return { type: 'playlist', count: playlistTracks.length, name: 'SoundCloud плейлист' };
+                        }
+                    } else {
+                        console.log('Загрузка SoundCloud трека через yt-dlp...');
+                        trackInfo = await this.getTrackInfoWithYtDlp(query);
+                    }
                 } catch (e) {
                     console.error('Ошибка SoundCloud:', e);
                 }
             } else if (query.includes('music.yandex.ru') || query.includes('music.yandex.com')) {
-                // Яндекс.Музыка URL - парсим страницу и ищем на YouTube
+                // Яндекс.Музыка URL - только одиночные треки
                 try {
                     console.log('Обработка ссылки Яндекс.Музыки...');
-                    const yandexInfo = await this.getYandexMusicInfo(query);
-                    if (yandexInfo && yandexInfo.title !== 'Unknown') {
-                        const searchQuery = `${yandexInfo.title} ${yandexInfo.artist}`;
-                        console.log('Поиск на YouTube:', searchQuery);
-                        const searched = await play.search(searchQuery, { limit: 1 });
-                        if (searched[0]) {
-                            trackInfo = {
-                                title: yandexInfo.title,
-                                url: searched[0].url,
-                                duration: searched[0].durationInSec || 0,
-                                thumbnail: yandexInfo.thumbnail || searched[0].thumbnails?.[0]?.url || null,
-                                author: yandexInfo.artist,
-                            };
+                    
+                    // Проверяем тип ссылки
+                    const isPlaylist = query.includes('/playlists/') || query.includes('/playlist/');
+                    const isAlbum = query.includes('/album/') && !query.includes('/track/');
+                    
+                    if (isPlaylist) {
+                        return { type: 'error', message: 'Плейлисты Яндекс.Музыки не поддерживаются. Скопируйте ссылку на конкретный трек.' };
+                    } else if (isAlbum) {
+                        return { type: 'error', message: 'Альбомы Яндекс.Музыки не поддерживаются. Скопируйте ссылку на конкретный трек.' };
+                    } else {
+                        // Одиночный трек
+                        const yandexInfo = await this.getYandexMusicInfo(query);
+                        if (yandexInfo && yandexInfo.title !== 'Unknown') {
+                            const searchQuery = `${yandexInfo.title} ${yandexInfo.artist}`;
+                            console.log('Поиск на YouTube:', searchQuery);
+                            const searched = await play.search(searchQuery, { limit: 1 });
+                            if (searched[0]) {
+                                trackInfo = {
+                                    title: yandexInfo.title,
+                                    url: searched[0].url,
+                                    duration: searched[0].durationInSec || 0,
+                                    thumbnail: yandexInfo.thumbnail || searched[0].thumbnails?.[0]?.url || null,
+                                    author: yandexInfo.artist,
+                                };
+                            }
                         }
                     }
                 } catch (e) {
@@ -572,6 +602,7 @@ class MusicPlayer {
                     '--quiet',
                     '--no-warnings',
                     '--no-playlist',
+                    '--no-part',
                     track.url
                 ]);
 
@@ -600,15 +631,10 @@ class MusicPlayer {
                     inlineVolume: false,
                 });
 
-                this.ytdlpProcess.stderr.on('data', (data) => {
-                    const msg = data.toString();
-                    if (msg.trim()) console.error('yt-dlp error:', msg);
-                });
+                // Игнорируем вывод yt-dlp (включая прогресс фрагментов)
+                this.ytdlpProcess.stderr.on('data', () => {});
 
-                this.ffmpegProcess.stderr.on('data', (data) => {
-                    const msg = data.toString();
-                    if (msg.trim()) console.error('ffmpeg error:', msg);
-                });
+                this.ffmpegProcess.stderr.on('data', () => {});
 
                 this.ytdlpProcess.on('error', () => {});
                 this.ffmpegProcess.on('error', () => {});
@@ -619,6 +645,7 @@ class MusicPlayer {
                     '-o', '-',
                     '--quiet',
                     '--no-warnings',
+                    '--no-part',
                     track.url
                 ]);
 

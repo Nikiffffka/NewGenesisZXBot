@@ -11,7 +11,7 @@ Discord music bot with a modern React web interface for playback control.
 ## ✨ Features
 
 - 🎶 Play music from YouTube, Spotify, SoundCloud, Yandex Music
-- 📋 Support for playlists and YouTube Mix/Radio
+- 📋 Support for playlists (YouTube, SoundCloud) and YouTube Mix/Radio
 - 🔁 Loop modes (track / queue)
 - 🔀 Queue shuffle
 - 🔊 Volume control
