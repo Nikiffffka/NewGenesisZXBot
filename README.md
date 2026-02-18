@@ -242,6 +242,18 @@ Get-Process -Name node | Stop-Process -Force
 - **React 18 + Vite** - Веб-интерфейс
 - **Tailwind CSS** - Стилизация
 
+## ⚠️ Disclaimer
+
+This project is for **educational and personal use only**.
+
+- The developers are not responsible for any misuse of this software
+- Users are responsible for complying with the Terms of Service of third-party platforms (YouTube, Spotify, SoundCloud, Yandex Music, etc.)
+- This software should not be used for commercial purposes
+- Respect copyright laws in your jurisdiction
+- The bot does not store or distribute copyrighted content
+
+**Данный проект предназначен только для образовательных целей и личного использования.** Разработчики не несут ответственности за неправомерное использование. Соблюдайте законодательство об авторских правах.
+
 ## 📄 Лицензия
 
 MIT
