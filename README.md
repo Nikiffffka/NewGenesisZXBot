@@ -1,92 +1,102 @@
-# 🎵 New Genesis ZX Music Bot
+# 🎵 New Genesis Music Bot
 
-Discord музыкальный бот с веб-интерфейсом для управления воспроизведением.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![Discord.js](https://img.shields.io/badge/Discord.js-14-blue.svg)](https://discord.js.org/)
 
-## ✨ Возможности
+**[🇷🇺 Русская версия](README.ru.md)**
 
-- 🎶 Воспроизведение музыки из YouTube, Spotify, SoundCloud, Яндекс.Музыка
-- 📋 Поддержка плейлистов и YouTube Mix/Radio
-- 🔁 Режимы повтора (трек / очередь)
-- 🔀 Перемешивание очереди
-- 🔊 Регулировка громкости
-- 📊 Прогресс-бар воспроизведения
-- 🌐 Веб-интерфейс для управления
-- 🔄 Обновление в реальном времени через WebSocket
-- 📱 Адаптивный дизайн
+Discord music bot with a modern React web interface for playback control.
 
-## 📋 Требования
+## ✨ Features
 
-- Node.js 18+ (рекомендуется 20+)
-- npm или yarn
+- 🎶 Play music from YouTube, Spotify, SoundCloud, Yandex Music
+- 📋 Support for playlists and YouTube Mix/Radio
+- 🔁 Loop modes (track / queue)
+- 🔀 Queue shuffle
+- 🔊 Volume control
+- 📊 Playback progress bar
+- 🌐 Web interface for control
+- 🔄 Real-time updates via WebSocket
+- 📱 Responsive design
+
+## 📋 Requirements
+
+- Node.js 18+ (20+ recommended)
+- npm or yarn
 - Discord Bot Token
 
-## 🚀 Установка
+## 🚀 Installation
 
-### 1. Клонирование и настройка
+### 1. Clone and setup
 
 ```bash
-# Установка зависимостей бота
+# Clone repository
+git clone https://github.com/Nikiffffka/NewGenesisZXBot.git
+cd NewGenesisZXBot
+
+# Install bot dependencies
 npm install
 
-# Установка зависимостей клиента
+# Install client dependencies
 cd client
 npm install
 cd ..
 ```
 
-### 2. Настройка переменных окружения
+### 2. Environment variables
 
-Скопируйте `.env.example` в `.env` и заполните:
+Copy `.env.example` to `.env` and fill in:
 
 ```bash
 cp .env.example .env
 ```
 
-Отредактируйте `.env`:
+Edit `.env`:
 
 ```env
 DISCORD_TOKEN=your_discord_bot_token_here
 CLIENT_ID=your_client_id_here
-GUILD_ID=your_guild_id_here  # опционально, для быстрой регистрации команд
+GUILD_ID=your_guild_id_here  # optional, for quick command registration
 PORT=3001
 FRONTEND_URL=http://localhost:5173
 ```
 
-### 3. Создание Discord бота
+### 3. Create Discord bot
 
-1. Перейдите на [Discord Developer Portal](https://discord.com/developers/applications)
-2. Создайте новое приложение
-3. Перейдите в раздел "Bot" и создайте бота
-4. Скопируйте токен в `.env`
-5. Включите следующие Intents:
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create a new application
+3. Go to "Bot" section and create a bot
+4. Copy the token to `.env`
+5. Enable the following Intents:
    - `PRESENCE INTENT`
    - `SERVER MEMBERS INTENT`
    - `MESSAGE CONTENT INTENT`
-6. Скопируйте Client ID из раздела "General Information"
+6. Copy Client ID from "General Information" section
 
-### 4. Приглашение бота на сервер
+### 4. Invite bot to server
 
-Используйте эту ссылку (замените `YOUR_CLIENT_ID`):
+Use this link (replace `YOUR_CLIENT_ID`):
 
 ```
 https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=3147776&scope=bot%20applications.commands
 ```
 
-## 🏃 Запуск
+## 🏃 Running
 
-### Режим разработки (бот + клиент)
+### Development mode (bot + client)
 
 ```bash
 npm run dev:all
 ```
 
-### Только бот
+### Bot only
 
 ```bash
 npm run dev
 ```
 
-### Только клиент
+### Client only
 
 ```bash
 npm run client
@@ -95,82 +105,69 @@ npm run client
 ### Production
 
 ```bash
-# Бот
+# Bot
 npm start
 
-# Клиент (сборка)
+# Client (build)
 cd client
 npm run build
 ```
 
-## 📝 Slash-команды
+## 📝 Slash Commands
 
-| Команда | Описание |
-|---------|----------|
-| `/play <query>` | Воспроизвести трек или добавить в очередь |
-| `/pause` | Поставить на паузу |
-| `/resume` | Продолжить воспроизведение |
-| `/skip` | Пропустить текущий трек |
-| `/stop` | Остановить и очистить очередь |
-| `/queue` | Показать очередь |
-| `/nowplaying` | Показать текущий трек |
-| `/shuffle` | Перемешать очередь |
-| `/loop <mode>` | Режим повтора (off/track/queue) |
-| `/volume <level>` | Установить громкость (0-200%) |
-| `/leave` | Отключиться от канала |
+| Command | Description |
+|---------|-------------|
+| `/play <query>` | Play a track or add to queue |
+| `/pause` | Pause playback |
+| `/resume` | Resume playback |
+| `/skip` | Skip current track |
+| `/stop` | Stop and clear queue |
+| `/queue` | Show queue |
+| `/nowplaying` | Show current track |
+| `/shuffle` | Shuffle queue |
+| `/loop <mode>` | Loop mode (off/track/queue) |
+| `/volume <level>` | Set volume (0-200%) |
+| `/leave` | Disconnect from channel |
 
-## 🌐 Веб-интерфейс
+## 🌐 Web Interface
 
-После запуска откройте в браузере:
+After starting, open in browser:
 
 ```
 http://localhost:5173
 ```
 
-### Возможности веб-интерфейса:
+### Web interface features:
 
-- Выбор сервера из списка
-- Выбор голосового канала
-- Поиск и добавление треков
-- Управление воспроизведением (пауза, пропуск, стоп)
-- Регулировка громкости
-- Прогресс-бар текущего трека
-- Просмотр и управление очередью
-- Режимы повтора
-- Перемешивание
+- Server selection
+- Voice channel selection
+- Search and add tracks
+- Playback control (pause, skip, stop)
+- Volume control
+- Current track progress bar
+- Queue view and management
+- Loop modes
+- Shuffle
 
-## 📁 Структура проекта
+## 📁 Project Structure
 
 ```
 NewGenesisZXBot/
 ├── src/
-│   ├── index.js           # Точка входа бота
+│   ├── index.js           # Bot entry point
 │   ├── commands/
-│   │   ├── index.js       # Загрузчик команд
-│   │   └── slash/         # Slash-команды
-│   │       ├── play.js
-│   │       ├── pause.js
-│   │       ├── resume.js
-│   │       ├── skip.js
-│   │       ├── stop.js
-│   │       ├── queue.js
-│   │       ├── shuffle.js
-│   │       ├── loop.js
-│   │       ├── nowplaying.js
-│   │       ├── volume.js
-│   │       └── leave.js
+│   │   ├── index.js       # Command loader
+│   │   └── slash/         # Slash commands
 │   ├── music/
-│   │   └── player.js      # Музыкальный плеер
+│   │   └── player.js      # Music player
 │   └── server/
-│       └── index.js       # Express + WebSocket сервер
-├── client/                # React приложение
+│       └── index.js       # Express + WebSocket server
+├── client/                # React application
 │   ├── src/
 │   │   ├── main.jsx
 │   │   ├── App.jsx
-│   │   ├── api.js         # API клиент
+│   │   ├── api.js
 │   │   └── components/
-│   │       ├── GuildList.jsx
-│   │       └── Dashboard.jsx
 │   ├── package.json
 │   └── vite.config.js
 ├── package.json
@@ -180,67 +177,67 @@ NewGenesisZXBot/
 
 ## 🔧 API Endpoints
 
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/guilds` | Список серверов |
-| GET | `/api/guilds/:id` | Информация о сервере |
-| GET | `/api/guilds/:id/player` | Состояние плеера |
-| POST | `/api/guilds/:id/play` | Добавить трек |
-| POST | `/api/guilds/:id/pause` | Пауза |
-| POST | `/api/guilds/:id/resume` | Продолжить |
-| POST | `/api/guilds/:id/skip` | Пропустить |
-| POST | `/api/guilds/:id/stop` | Остановить |
-| POST | `/api/guilds/:id/shuffle` | Перемешать |
-| POST | `/api/guilds/:id/loop` | Режим повтора |
-| POST | `/api/guilds/:id/volume` | Установить громкость |
-| POST | `/api/guilds/:id/connect` | Подключиться к каналу |
-| POST | `/api/guilds/:id/disconnect` | Отключиться |
-| DELETE | `/api/guilds/:id/queue/:index` | Удалить из очереди |
-| DELETE | `/api/guilds/:id/queue` | Очистить очередь |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/guilds` | List of servers |
+| GET | `/api/guilds/:id` | Server info |
+| GET | `/api/guilds/:id/player` | Player state |
+| POST | `/api/guilds/:id/play` | Add track |
+| POST | `/api/guilds/:id/pause` | Pause |
+| POST | `/api/guilds/:id/resume` | Resume |
+| POST | `/api/guilds/:id/skip` | Skip |
+| POST | `/api/guilds/:id/stop` | Stop |
+| POST | `/api/guilds/:id/shuffle` | Shuffle |
+| POST | `/api/guilds/:id/loop` | Loop mode |
+| POST | `/api/guilds/:id/volume` | Set volume |
+| POST | `/api/guilds/:id/connect` | Connect to channel |
+| POST | `/api/guilds/:id/disconnect` | Disconnect |
+| DELETE | `/api/guilds/:id/queue/:index` | Remove from queue |
+| DELETE | `/api/guilds/:id/queue` | Clear queue |
 
 ## 🔌 WebSocket
 
-Подключение: `ws://localhost:3001`
+Connection: `ws://localhost:3001`
 
-Подписка на обновления:
+Subscribe to updates:
 ```json
 { "type": "subscribe", "guildId": "YOUR_GUILD_ID" }
 ```
 
-## ⚠️ Возможные проблемы
+## ⚠️ Troubleshooting
 
-### FFmpeg не найден
-FFmpeg включён в проект через `ffmpeg-static`, дополнительная установка не требуется.
+### FFmpeg not found
+FFmpeg is included via `ffmpeg-static`, no additional installation required.
 
-### Ошибки воспроизведения YouTube
-Бот использует `yt-dlp-exec` для загрузки аудио. Если возникают проблемы:
+### YouTube playback errors
+The bot uses `yt-dlp-exec` for audio. If issues occur:
 ```bash
 npm update yt-dlp-exec
 ```
 
-### Ошибки opus/sodium
+### Opus/sodium errors
 ```bash
 npm rebuild
 ```
 
-### Порт уже занят
-Если порт 3001 занят:
+### Port already in use
+If port 3001 is busy:
 ```powershell
 # Windows
 Get-Process -Name node | Stop-Process -Force
 ```
 
-## 🛠️ Технологии
+## 🛠️ Technologies
 
 - **Discord.js 14** - Discord API
-- **@discordjs/voice** - Голосовые соединения
-- **yt-dlp-exec** - Загрузка аудио YouTube
-- **ffmpeg-static** - Обработка аудио
-- **play-dl** - Поиск и метаданные
+- **@discordjs/voice** - Voice connections
+- **yt-dlp-exec** - YouTube audio download
+- **ffmpeg-static** - Audio processing
+- **play-dl** - Search and metadata
 - **Express** - REST API
-- **WebSocket (ws)** - Реалтайм обновления
-- **React 18 + Vite** - Веб-интерфейс
-- **Tailwind CSS** - Стилизация
+- **WebSocket (ws)** - Real-time updates
+- **React 18 + Vite** - Web interface
+- **Tailwind CSS** - Styling
 
 ## ⚠️ Disclaimer
 
@@ -252,8 +249,6 @@ This project is for **educational and personal use only**.
 - Respect copyright laws in your jurisdiction
 - The bot does not store or distribute copyrighted content
 
-**Данный проект предназначен только для образовательных целей и личного использования.** Разработчики не несут ответственности за неправомерное использование. Соблюдайте законодательство об авторских правах.
-
-## 📄 Лицензия
+## 📄 License
 
 MIT
