@@ -22,7 +22,7 @@ Discord music bot with a modern React web interface for playback control.
 
 ## 📋 Requirements
 
-- Node.js 18+ (20+ recommended)
+- Node.js 22.12+ (24+ recommended)
 - npm or yarn
 - Discord Bot Token
 

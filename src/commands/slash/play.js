@@ -25,19 +25,29 @@ module.exports = {
 
         const player = client.getPlayer(interaction.guildId);
 
-        // Подключаемся к каналу если не подключены
-        if (!player.connection) {
-            const connected = await player.connect(voiceChannel);
-            if (!connected) {
-                return interaction.editReply('❌ Не удалось подключиться к голосовому каналу!');
-            }
-        }
-
         // Добавляем трек
         const result = await player.addTrack(query);
 
         if (!result) {
             return interaction.editReply('❌ Не удалось найти трек!');
+        }
+
+        let warning = null;
+
+        // Подключаемся к каналу если не подключены
+        if (!player.isConnected()) {
+            const connected = await player.connect(voiceChannel);
+            if (!connected) {
+                warning = '⚠️ Трек добавлен в очередь, но подключение к голосовому каналу не удалось.';
+            }
+        }
+
+        // Начинаем воспроизведение если плеер не играет
+        if (!warning && !player.isPlaying && player.isConnected()) {
+            const started = await player.playNext();
+            if (!started) {
+                warning = '⚠️ Трек добавлен в очередь, но запуск воспроизведения не удался.';
+            }
         }
 
         const embed = new EmbedBuilder()
@@ -56,12 +66,12 @@ module.exports = {
                 );
         }
 
-        await interaction.editReply({ embeds: [embed] });
-
-        // Начинаем воспроизведение если плеер не играет
-        if (!player.isPlaying) {
-            await player.playNext();
+        const payload = { embeds: [embed] };
+        if (warning) {
+            payload.content = warning;
         }
+
+        await interaction.editReply(payload);
     },
 };
 

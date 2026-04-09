@@ -1,5 +1,15 @@
 require('dotenv').config();
 
+// На некоторых сетях Discord Voice стабильнее работает через IPv4.
+try {
+    const dns = require('dns');
+    if (typeof dns.setDefaultResultOrder === 'function') {
+        dns.setDefaultResultOrder('ipv4first');
+    }
+} catch (e) {
+    // Игнорируем, если API недоступно в текущем runtime.
+}
+
 // Устанавливаем путь к FFmpeg до загрузки других модулей
 const ffmpegPath = require('ffmpeg-static');
 process.env.FFMPEG_PATH = ffmpegPath;

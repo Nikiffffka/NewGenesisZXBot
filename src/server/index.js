@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { WebSocketServer } = require('ws');
 const http = require('http');
+const { PermissionFlagsBits } = require('discord.js');
 
 function startServer(discordClient) {
     const app = express();
@@ -127,30 +128,57 @@ function startServer(discordClient) {
 
         const player = discordClient.getPlayer(req.params.guildId);
 
-        // Подключаемся к каналу если указан и не подключены
-        if (channelId && !player.connection) {
-            const channel = guild.channels.cache.get(channelId);
-            if (channel) {
-                await player.connect(channel);
-            }
-        }
-
-        if (!player.connection) {
-            return res.status(400).json({ error: 'Bot not connected to voice channel' });
-        }
-
         const result = await player.addTrack(query);
 
         if (!result) {
             return res.status(400).json({ error: 'Track not found' });
         }
 
-        // Начинаем воспроизведение если плеер не играет
-        if (!player.isPlaying) {
-            await player.playNext();
+        const response = { success: true, result };
+
+        // Подключаемся к каналу если указан и не подключены
+        if (channelId && !player.isConnected()) {
+            const channel = guild.channels.cache.get(channelId);
+            if (channel) {
+                const me = guild.members.me || await guild.members.fetch(discordClient.user.id);
+                const perms = channel.permissionsFor(me);
+
+                if (!perms?.has(PermissionFlagsBits.Connect)) {
+                    response.warning = 'Track queued, but bot has no CONNECT permission for this voice channel';
+                    return res.status(200).json(response);
+                }
+
+                if (!perms?.has(PermissionFlagsBits.Speak)) {
+                    response.warning = 'Track queued, but bot has no SPEAK permission for this voice channel';
+                    return res.status(200).json(response);
+                }
+
+                const connected = await player.connect(channel);
+                if (!connected) {
+                    response.warning = 'Track queued, but failed to connect to voice channel';
+                    return res.status(200).json(response);
+                }
+            } else {
+                response.warning = 'Track queued, but selected voice channel not found';
+                return res.status(200).json(response);
+            }
         }
 
-        res.json({ success: true, result });
+        if (!player.isConnected()) {
+            response.warning = 'Track queued, but bot is not connected to a voice channel';
+            return res.status(200).json(response);
+        }
+
+        // Начинаем воспроизведение если плеер не играет
+        if (!player.isPlaying) {
+            const started = await player.playNext();
+            if (!started) {
+                response.warning = 'Track queued, but failed to start playback after connecting';
+                return res.status(200).json(response);
+            }
+        }
+
+        res.json(response);
     });
 
     // Пауза

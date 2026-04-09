@@ -128,8 +128,11 @@ export const api = {
 export function createWebSocket(guildId, onMessage) {
   const wsUrl = (import.meta.env.VITE_WS_URL || 'ws://localhost:3001').replace('http', 'ws');
   const ws = new WebSocket(wsUrl);
+  let opened = false;
+  let manuallyClosed = false;
 
   ws.onopen = () => {
+    opened = true;
     ws.send(JSON.stringify({ type: 'subscribe', guildId }));
   };
 
@@ -139,7 +142,30 @@ export function createWebSocket(guildId, onMessage) {
   };
 
   ws.onerror = (error) => {
-    console.error('WebSocket ошибка:', error);
+    // В dev-режиме (React.StrictMode) сокет может закрываться до onopen,
+    // что вызывает шумную, но безвредную ошибку в консоли браузера.
+    if (!opened && import.meta.env.DEV) {
+      return;
+    }
+    if (!manuallyClosed) {
+      console.error('WebSocket ошибка:', error);
+    }
+  };
+
+  ws.onclose = (event) => {
+    if (manuallyClosed) return;
+
+    // 1000 = normal closure, не считаем ошибкой.
+    if (event.code !== 1000) {
+      console.warn(`WebSocket закрыт: code=${event.code}, reason=${event.reason || 'no reason'}`);
+    }
+  };
+
+  // Переопределяем close, чтобы различать ручное и аварийное закрытие.
+  const originalClose = ws.close.bind(ws);
+  ws.close = (...args) => {
+    manuallyClosed = true;
+    return originalClose(...args);
   };
 
   return ws;

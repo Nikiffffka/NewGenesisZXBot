@@ -43,6 +43,11 @@ class MusicPlayer {
         });
     }
 
+    // Проверка активного голосового соединения
+    isConnected() {
+        return !!this.connection && this.connection.state.status !== VoiceConnectionStatus.Destroyed;
+    }
+
     // Добавить слушателя для обновлений состояния
     addListener(callback) {
         this.listeners.push(callback);
@@ -82,24 +87,108 @@ class MusicPlayer {
         return Math.min(elapsed, this.currentTrack.duration || elapsed);
     }
 
+    // Нормализовать URL (добавить https:// если пользователь вставил ссылку без протокола)
+    normalizeQuery(query) {
+        const value = (query || '').trim();
+        if (!value) return value;
+
+        if (/^https?:\/\//i.test(value)) {
+            return value;
+        }
+
+        const knownMusicHost = /(youtube\.com|youtu\.be|soundcloud\.com|spotify\.com|music\.yandex\.(ru|com))/i;
+        const looksLikeDomain = /^(www\.)?[a-z0-9.-]+\.[a-z]{2,}($|\/|\?)/i;
+
+        if (knownMusicHost.test(value) && looksLikeDomain.test(value)) {
+            return `https://${value}`;
+        }
+
+        return value;
+    }
+
     // Подключиться к голосовому каналу
     async connect(channel) {
+        if (this.isConnected()) {
+            const currentChannelId = this.connection.joinConfig?.channelId;
+            if (currentChannelId === channel.id) {
+                return true;
+            }
+            this.disconnect();
+        }
+
+        console.log(`Voice connect: guild=${channel.guild.id}, channel=${channel.id} (${channel.name})`);
+
         this.connection = joinVoiceChannel({
             channelId: channel.id,
             guildId: channel.guild.id,
             adapterCreator: channel.guild.voiceAdapterCreator,
         });
 
-        try {
-            await entersState(this.connection, VoiceConnectionStatus.Ready, 30_000);
-            this.connection.subscribe(this.player);
-            return true;
-        } catch (error) {
-            console.error('Ошибка подключения к каналу:', error);
-            this.connection.destroy();
-            this.connection = null;
-            return false;
+        this.connection.on('stateChange', (oldState, newState) => {
+            console.log(`Voice state: ${oldState.status} -> ${newState.status}`);
+        });
+
+        this.connection.on(VoiceConnectionStatus.Ready, () => {
+            if (this.connection && this.connection.state.status === VoiceConnectionStatus.Ready) {
+                this.connection.subscribe(this.player);
+                console.log('Voice connection is Ready and subscribed to player');
+            }
+        });
+
+        this.connection.on(VoiceConnectionStatus.Disconnected, async () => {
+            try {
+                // Даем Discord время на внутренний rejoin при временных сетевых разрывах.
+                await Promise.race([
+                    entersState(this.connection, VoiceConnectionStatus.Signalling, 5_000),
+                    entersState(this.connection, VoiceConnectionStatus.Connecting, 5_000),
+                ]);
+            } catch (error) {
+                console.error('Голосовое соединение потеряно, отключаемся:', error?.message || error);
+                this.disconnect();
+            }
+        });
+
+        for (let attempt = 0; attempt < 4; attempt++) {
+            try {
+                await entersState(this.connection, VoiceConnectionStatus.Ready, 12_000);
+                if (this.connection && this.connection.state.status === VoiceConnectionStatus.Ready) {
+                    this.connection.subscribe(this.player);
+                }
+                return true;
+            } catch (error) {
+                console.error(`Ошибка подключения к каналу (attempt ${attempt + 1}/4):`, error);
+
+                if (!this.connection || this.connection.state.status === VoiceConnectionStatus.Destroyed) {
+                    this.connection = null;
+                    return false;
+                }
+
+                const status = this.connection.state.status;
+                if (status === VoiceConnectionStatus.Ready) {
+                    return true;
+                }
+
+                if (status === VoiceConnectionStatus.Signalling || status === VoiceConnectionStatus.Connecting) {
+                    if (attempt < 3) {
+                        console.warn(`Voice stuck in ${status}, trying rejoin (${attempt + 1}/3)...`);
+                        this.connection.rejoin({
+                            channelId: channel.id,
+                            selfDeaf: true,
+                            selfMute: false,
+                        });
+                        continue;
+                    }
+                }
+
+                break;
+            }
         }
+
+        if (this.connection && this.connection.state.status !== VoiceConnectionStatus.Destroyed) {
+            this.connection.destroy();
+        }
+        this.connection = null;
+        return false;
     }
 
     // Отключиться от голосового канала
@@ -382,6 +471,8 @@ class MusicPlayer {
         try {
             let trackInfo;
 
+            query = this.normalizeQuery(query);
+
             console.log('Добавление трека:', query);
 
             // Проверяем, является ли это YouTube URL
@@ -572,6 +663,38 @@ class MusicPlayer {
             this.currentTrack = null;
             this.notifyListeners();
             return false;
+        }
+
+        if (!this.connection || this.connection.state.status === VoiceConnectionStatus.Destroyed) {
+            console.error('Нет активного голосового соединения для воспроизведения');
+            return false;
+        }
+
+        if (this.connection.state.status !== VoiceConnectionStatus.Ready) {
+            let ready = false;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    await entersState(this.connection, VoiceConnectionStatus.Ready, 10_000);
+                    ready = true;
+                    break;
+                } catch (error) {
+                    const status = this.connection?.state?.status;
+                    console.error('Соединение не перешло в Ready перед воспроизведением:', error?.message || error);
+
+                    if (status === VoiceConnectionStatus.Signalling || status === VoiceConnectionStatus.Connecting) {
+                        console.warn(`Rejoin before playback (${attempt + 1}/3), status=${status}`);
+                        const channelId = this.connection?.joinConfig?.channelId;
+                        if (channelId) {
+                            this.connection.rejoin({ channelId, selfDeaf: true, selfMute: false });
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            if (!ready) {
+                return false;
+            }
         }
 
         const track = this.queue.shift();
